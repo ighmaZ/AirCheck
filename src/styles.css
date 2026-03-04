@@ -26,6 +26,14 @@
   --link-bg-hover: rgba(255, 255, 255, 0.9);
   --hero-a: rgba(79, 184, 178, 0.36);
   --hero-b: rgba(47, 106, 74, 0.2);
+  --aqi-good: #2f8f61;
+  --aqi-moderate: #a46a1d;
+  --aqi-unhealthy-sensitive: #b45a0d;
+  --aqi-unhealthy: #b13b3b;
+  --aqi-very-unhealthy: #7a3ca5;
+  --aqi-hazardous: #6f1e28;
+  --aqi-hero-glow: rgba(35, 133, 120, 0.2);
+  --aqi-hero-ring: rgba(22, 93, 102, 0.22);
 }
 
 :root[data-theme="dark"] {
@@ -48,6 +56,14 @@
   --link-bg-hover: rgba(24, 44, 49, 0.8);
   --hero-a: rgba(96, 215, 207, 0.18);
   --hero-b: rgba(110, 200, 154, 0.12);
+  --aqi-good: #6fd4aa;
+  --aqi-moderate: #f2c47c;
+  --aqi-unhealthy-sensitive: #f2b16c;
+  --aqi-unhealthy: #ff968f;
+  --aqi-very-unhealthy: #d2aff3;
+  --aqi-hazardous: #f3a5ae;
+  --aqi-hero-glow: rgba(100, 206, 197, 0.15);
+  --aqi-hero-ring: rgba(117, 205, 221, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -71,6 +87,14 @@
     --link-bg-hover: rgba(24, 44, 49, 0.8);
     --hero-a: rgba(96, 215, 207, 0.18);
     --hero-b: rgba(110, 200, 154, 0.12);
+    --aqi-good: #6fd4aa;
+    --aqi-moderate: #f2c47c;
+    --aqi-unhealthy-sensitive: #f2b16c;
+    --aqi-unhealthy: #ff968f;
+    --aqi-very-unhealthy: #d2aff3;
+    --aqi-hazardous: #f3a5ae;
+    --aqi-hero-glow: rgba(100, 206, 197, 0.15);
+    --aqi-hero-ring: rgba(117, 205, 221, 0.22);
   }
 }
 
@@ -155,7 +179,7 @@ pre code {
 }
 
 .page-wrap {
-  width: min(1080px, calc(100% - 2rem));
+  width: min(1120px, calc(100% - 2rem));
   margin-inline: auto;
 }
 
@@ -243,8 +267,75 @@ a {
   background: color-mix(in oklab, var(--header-bg) 84%, transparent 16%);
 }
 
+.aqi-page {
+  position: relative;
+}
+
+.aqi-page::before {
+  content: "";
+  position: absolute;
+  left: 4%;
+  top: 0;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  background: radial-gradient(circle at center, var(--aqi-hero-glow), transparent 72%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.aqi-hero {
+  border-color: color-mix(in oklab, var(--aqi-hero-ring) 56%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--surface-strong) 85%, white 15%), var(--surface)),
+    radial-gradient(130% 100% at 88% 8%, rgba(68, 188, 178, 0.12), transparent 58%);
+}
+
+.aqi-hero h1 {
+  text-wrap: balance;
+}
+
+.aqi-status-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.aqi-status-card::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 1.15rem;
+  border: 1px dashed color-mix(in oklab, var(--line) 72%, var(--lagoon) 28%);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.aqi-page ul li::marker,
+.aqi-page ol li::marker {
+  color: color-mix(in oklab, var(--lagoon-deep) 74%, var(--sea-ink));
+}
+
+.aqi-page input::selection {
+  background: color-mix(in oklab, var(--lagoon) 38%, white);
+}
+
+.aqi-page button:focus-visible,
+.aqi-page input:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--lagoon-deep) 56%, white);
+  outline-offset: 2px;
+}
+
 .rise-in {
   animation: rise-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (max-width: 1024px) {
+  .aqi-page::before {
+    left: 0;
+    width: 220px;
+    height: 220px;
+  }
 }
 
 @keyframes rise-in {
