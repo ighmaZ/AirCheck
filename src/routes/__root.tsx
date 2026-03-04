@@ -19,7 +19,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'AirCheck | Live AQI Advisor',
+      },
+      {
+        name: 'description',
+        content:
+          'Track city air quality instantly, understand health impact, and get practical safety guidance.',
       },
     ],
     links: [
