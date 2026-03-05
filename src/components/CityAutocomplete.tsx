@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type KeyboardEvent,
 } from 'react'
@@ -29,6 +30,7 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
   const [activeIndex, setActiveIndex] = useState(-1)
   const [results, setResults] = useState<CitySuggestion[]>([])
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const skipNextFetchRef = useRef(false)
 
   const activeId = useMemo(() => {
     if (!isOpen || activeIndex < 0 || activeIndex >= results.length) {
@@ -39,6 +41,16 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
   }, [activeIndex, isOpen, listboxId, results])
 
   useEffect(() => {
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false
+      setResults([])
+      setFetchError(null)
+      setIsLoading(false)
+      setIsOpen(false)
+      setActiveIndex(-1)
+      return
+    }
+
     const trimmed = query.trim()
     if (trimmed.length < 2) {
       setResults([])
@@ -94,6 +106,7 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
   }, [query])
 
   function handleSelect(city: CitySuggestion) {
+    skipNextFetchRef.current = true
     setQuery(city.label)
     setIsOpen(false)
     setActiveIndex(-1)
@@ -177,7 +190,7 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
             setActiveIndex(-1)
           }, 120)
         }}
-        placeholder="Type at least 2 letters of your city"
+        placeholder="Enter your city"
         className="w-full rounded-2xl border border-[var(--line)] bg-white/75 px-4 py-3 text-base text-[var(--sea-ink)] shadow-[0_12px_30px_rgba(27,62,58,0.08)] outline-none ring-[rgba(50,143,151,0.3)] transition placeholder:text-[var(--sea-ink-soft)] focus:ring-2"
       />
 

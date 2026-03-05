@@ -8,11 +8,27 @@ export type AqiBand =
 
 export type SafeVerdict = 'Safe' | 'Unsafe'
 
+export type AqiPersona = {
+  emoji: string
+  title: string
+  tone: string
+}
+
 export type AqiAssessment = {
   band: AqiBand
   safeVerdict: SafeVerdict
   dangerScore: 1 | 2 | 3 | 4 | 5 | 6
+  severityLabel:
+    | 'Low'
+    | 'Guarded'
+    | 'Elevated'
+    | 'High'
+    | 'Very High'
+    | 'Extreme'
   summary: string
+  importanceNote: string
+  immediateWindow: string
+  persona: AqiPersona
   lifeImpact: string[]
   recommendedActions: string[]
   sensitiveGroupAdvice: string[]
@@ -96,11 +112,13 @@ function calculateSubIndex(
     return 0
   }
 
-  const capped = Math.min(concentration, breakpoints[breakpoints.length - 1].concentrationHigh)
+  const capped = Math.min(
+    concentration,
+    breakpoints[breakpoints.length - 1].concentrationHigh,
+  )
 
   const range = breakpoints.find(
-    (item) =>
-      capped >= item.concentrationLow && capped <= item.concentrationHigh,
+    (item) => capped >= item.concentrationLow && capped <= item.concentrationHigh,
   )
 
   if (!range) {
@@ -164,18 +182,30 @@ export function analyzeAqi(aqi: number): AqiAssessment {
       band,
       safeVerdict: 'Safe',
       dangerScore: 1,
-      summary: 'Air is clean and safe for normal outdoor activity.',
+      severityLabel: 'Low',
+      summary: 'Air is clean and safe for most normal activity.',
+      importanceNote:
+        'Low AQI days are ideal for outdoor routines and recovery from respiratory stress.',
+      immediateWindow:
+        'Risk in the next 24 hours is minimal for healthy and sensitive groups.',
+      persona: {
+        emoji: '😊',
+        title: 'Comfortable Air',
+        tone: 'Great day for outdoor plans.',
+      },
       lifeImpact: [
-        'Most people can exercise outdoors without irritation.',
-        'Indoor air comfort remains stable through the day.',
-        'Breathing strain risk is minimal for healthy individuals.',
+        'Outdoor running, cycling, and commuting are generally comfortable.',
+        'Respiratory irritation risk is very low for most people.',
+        'Indoor air quality remains stable with normal ventilation habits.',
       ],
       recommendedActions: [
         'Continue normal outdoor routines.',
-        'Ventilate your home when weather allows.',
-        'Recheck AQI before long outdoor plans.',
+        'Open windows during cleaner hours for fresh ventilation.',
+        'Check AQI again before long outdoor events.',
       ],
-      sensitiveGroupAdvice: ['No special precautions are usually needed.'],
+      sensitiveGroupAdvice: [
+        'No special restrictions are usually required for sensitive groups.',
+      ],
     }
   }
 
@@ -184,19 +214,30 @@ export function analyzeAqi(aqi: number): AqiAssessment {
       band,
       safeVerdict: 'Safe',
       dangerScore: 2,
-      summary: 'Air is acceptable, but sensitive groups may notice mild symptoms.',
+      severityLabel: 'Guarded',
+      summary:
+        'Air is acceptable, but early symptoms can appear in sensitive individuals.',
+      importanceNote:
+        'This level often feels fine at rest but can affect prolonged outdoor exertion.',
+      immediateWindow:
+        'Short outdoor exposure is usually fine, but monitor symptoms during exercise.',
+      persona: {
+        emoji: '🙂',
+        title: 'Mostly Okay Air',
+        tone: 'Proceed, but with awareness.',
+      },
       lifeImpact: [
-        'Long outdoor exertion can feel harder for some people.',
-        'Mild throat or eye irritation may appear near heavy traffic.',
-        'People with asthma can notice occasional discomfort.',
+        'Long outdoor workouts may feel harder than usual.',
+        'Mild throat, eye, or sinus irritation can appear near traffic corridors.',
+        'People with asthma may notice occasional chest tightness.',
       ],
       recommendedActions: [
-        'Limit prolonged high-intensity outdoor sessions.',
-        'Prefer low-traffic routes for walking or running.',
-        'Track AQI changes if symptoms start.',
+        'Reduce prolonged high-intensity outdoor activity.',
+        'Prefer parks and lower-traffic routes.',
+        'Hydrate well and track breathing symptoms.',
       ],
       sensitiveGroupAdvice: [
-        'Asthma or allergy-prone users should keep quick-relief medication nearby.',
+        'Children, elderly users, and asthma patients should shorten intense outdoor sessions.',
       ],
     }
   }
@@ -206,19 +247,30 @@ export function analyzeAqi(aqi: number): AqiAssessment {
       band,
       safeVerdict: 'Unsafe',
       dangerScore: 3,
-      summary: 'Sensitive groups face meaningful risk during outdoor exposure.',
+      severityLabel: 'Elevated',
+      summary:
+        'Pollution is now meaningfully risky for sensitive populations and active users.',
+      importanceNote:
+        'At this stage, air quality starts changing daily behavior, not just comfort.',
+      immediateWindow:
+        'Repeated outdoor exposure today can trigger cough, breathlessness, or fatigue.',
+      persona: {
+        emoji: '😷',
+        title: 'Caution Air',
+        tone: 'Limit exposure, especially if vulnerable.',
+      },
       lifeImpact: [
-        'Children, elderly adults, and respiratory patients are more likely to be affected.',
-        'Outdoor workouts can trigger coughing or shortness of breath.',
-        'Recovery after exertion may take longer than usual.',
+        'Sensitive groups can experience respiratory symptoms quickly outdoors.',
+        'Outdoor workouts can trigger wheezing, coughing, or reduced endurance.',
+        'Children and older adults may experience higher fatigue with outdoor activity.',
       ],
       recommendedActions: [
-        'Reduce outdoor intensity and total time outside.',
-        'Use a well-fitted mask in polluted areas.',
-        'Shift exercise indoors where possible.',
+        'Cut outdoor intensity and total exposure time.',
+        'Use a well-fitted filtration mask on busy roads.',
+        'Shift cardio workouts indoors when possible.',
       ],
       sensitiveGroupAdvice: [
-        'Sensitive groups should keep outdoor activity short and symptom-led.',
+        'Sensitive groups should keep outings brief and symptom-guided.',
       ],
     }
   }
@@ -228,19 +280,30 @@ export function analyzeAqi(aqi: number): AqiAssessment {
       band,
       safeVerdict: 'Unsafe',
       dangerScore: 4,
-      summary: 'Air pollution is high enough to impact the wider population.',
+      severityLabel: 'High',
+      summary:
+        'Air pollution is high enough to impact healthy people, not only sensitive groups.',
+      importanceNote:
+        'This level can affect productivity, mood, exercise tolerance, and respiratory stability.',
+      immediateWindow:
+        'Outdoor exertion today can cause notable breathing discomfort across the population.',
+      persona: {
+        emoji: '🤒',
+        title: 'Risky Air',
+        tone: 'Avoid unnecessary outdoor strain.',
+      },
       lifeImpact: [
-        'Outdoor exposure can cause breathing discomfort even in healthy adults.',
-        'Productivity and exercise performance can drop outdoors.',
-        'Respiratory symptoms become more likely across all age groups.',
+        'Breathing discomfort may occur even in otherwise healthy adults.',
+        'Outdoor work and exercise performance can drop significantly.',
+        'Symptom frequency increases across respiratory and cardiac risk groups.',
       ],
       recommendedActions: [
         'Avoid strenuous outdoor activity.',
-        'Keep windows closed during peak traffic hours.',
-        'Use indoor air filtration where possible.',
+        'Keep windows closed during peak traffic/pollution hours.',
+        'Use indoor filtration in sleeping and working rooms.',
       ],
       sensitiveGroupAdvice: [
-        'Sensitive users should avoid outdoor activity unless essential.',
+        'High-risk individuals should avoid outdoor activity unless necessary.',
       ],
     }
   }
@@ -250,19 +313,30 @@ export function analyzeAqi(aqi: number): AqiAssessment {
       band,
       safeVerdict: 'Unsafe',
       dangerScore: 5,
-      summary: 'Health alert level: short outdoor exposure can be harmful.',
+      severityLabel: 'Very High',
+      summary:
+        'This is a health-alert level where short outdoor exposure can be harmful.',
+      importanceNote:
+        'Emergency-style precautions are warranted to reduce cumulative lung and heart stress.',
+      immediateWindow:
+        'Symptoms can appear quickly; repeated exposure materially increases near-term risk.',
+      persona: {
+        emoji: '⚠️',
+        title: 'Health Alert Air',
+        tone: 'Strongly minimize outdoor exposure.',
+      },
       lifeImpact: [
-        'Breathing and cardiovascular strain increase quickly outdoors.',
-        'Irritation symptoms may appear in a short time window.',
-        'Risk is significantly elevated for children and older adults.',
+        'Breathing and cardiovascular strain rise sharply during outdoor movement.',
+        'Irritation, headaches, and fatigue can appear in short intervals.',
+        'Children, elderly users, and respiratory patients face significant health risk.',
       ],
       recommendedActions: [
         'Stay indoors as much as possible.',
-        'Avoid outdoor exercise and heavy exertion.',
+        'Cancel outdoor workouts and heavy outdoor tasks.',
         'Run air purifier continuously in occupied rooms.',
       ],
       sensitiveGroupAdvice: [
-        'High-risk individuals should avoid going outside unless unavoidable.',
+        'Sensitive groups should avoid outdoor exposure unless unavoidable.',
       ],
     }
   }
@@ -271,19 +345,29 @@ export function analyzeAqi(aqi: number): AqiAssessment {
     band,
     safeVerdict: 'Unsafe',
     dangerScore: 6,
+    severityLabel: 'Extreme',
     summary: 'Emergency-level pollution: serious health risk for everyone.',
+    importanceNote:
+      'This level is hazardous for the whole population and should be treated as a public health emergency signal.',
+    immediateWindow:
+      'Even short exposure can be dangerous; strict protection measures are critical now.',
+    persona: {
+      emoji: '☣️',
+      title: 'Hazard Air',
+      tone: 'Emergency precautions recommended.',
+    },
     lifeImpact: [
-      'Even brief outdoor exposure may trigger severe symptoms.',
-      'Respiratory and cardiac risk is sharply elevated.',
-      'Population-wide health effects are expected.',
+      'Very brief outdoor exposure may trigger severe symptoms.',
+      'Cardio-respiratory stress is sharply elevated for all groups.',
+      'Population-wide health effects are likely without strict exposure control.',
     ],
     recommendedActions: [
-      'Remain indoors and seal windows and doors.',
-      'Use high-filtration masks if outdoor travel is unavoidable.',
-      'Monitor official local health advisories closely.',
+      'Remain indoors and seal doors/windows as much as possible.',
+      'Use high-filtration mask if you must go outside.',
+      'Follow local health advisories and reduce all outdoor exertion.',
     ],
     sensitiveGroupAdvice: [
-      'Sensitive groups should strictly avoid outdoor exposure.',
+      'Children, elderly adults, pregnant users, and respiratory/cardiac patients should strictly avoid outdoor exposure.',
     ],
   }
 }

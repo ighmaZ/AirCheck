@@ -209,6 +209,13 @@ a {
   position: relative;
 }
 
+.aqi-search-mode {
+  min-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .aqi-page::before {
   content: "";
   position: absolute;
