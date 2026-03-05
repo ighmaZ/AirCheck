@@ -1,11 +1,6 @@
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
+import type { KeyboardEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { searchCities } from '../server/cities'
 
 export type CitySuggestion = {
@@ -25,92 +20,95 @@ type CityAutocompleteProps = {
 export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
   const listboxId = useId()
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [results, setResults] = useState<CitySuggestion[]>([])
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const skipNextFetchRef = useRef(false)
+  const [hasUserTypedSinceSelection, setHasUserTypedSinceSelection] =
+    useState(true)
+
+  const trimmedQuery = query.trim()
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(trimmedQuery)
+    }, 260)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [trimmedQuery])
+
+  const citiesQuery = useQuery({
+    queryKey: ['city-search', debouncedQuery],
+    queryFn: () =>
+      searchCities({
+        data: {
+          query: debouncedQuery,
+        },
+      }),
+    enabled: debouncedQuery.length >= 2 && hasUserTypedSinceSelection,
+    retry: false,
+  })
+
+  const results = citiesQuery.data ?? []
+  const fetchError = citiesQuery.error
+    ? citiesQuery.error instanceof Error
+      ? citiesQuery.error.message
+      : 'Unable to load cities right now. Please try again.'
+    : null
+  const isLoading =
+    trimmedQuery.length >= 2 &&
+    hasUserTypedSinceSelection &&
+    (trimmedQuery !== debouncedQuery || citiesQuery.isFetching)
 
   const activeId = useMemo(() => {
     if (!isOpen || activeIndex < 0 || activeIndex >= results.length) {
       return undefined
     }
 
-    return `${listboxId}-option-${results[activeIndex]?.id}`
+    return `${listboxId}-option-${results[activeIndex].id}`
   }, [activeIndex, isOpen, listboxId, results])
 
   useEffect(() => {
-    if (skipNextFetchRef.current) {
-      skipNextFetchRef.current = false
-      setResults([])
-      setFetchError(null)
-      setIsLoading(false)
+    if (!hasUserTypedSinceSelection) {
       setIsOpen(false)
       setActiveIndex(-1)
       return
     }
 
-    const trimmed = query.trim()
-    if (trimmed.length < 2) {
-      setResults([])
-      setFetchError(null)
-      setIsLoading(false)
-      setIsOpen(trimmed.length > 0)
+    if (trimmedQuery.length < 2) {
+      setIsOpen(trimmedQuery.length > 0)
       setActiveIndex(-1)
       return
     }
 
-    let active = true
-    setIsLoading(true)
     setIsOpen(true)
-    setFetchError(null)
+  }, [trimmedQuery, hasUserTypedSinceSelection])
 
-    const timer = window.setTimeout(async () => {
-      try {
-        const next = await searchCities({
-          data: {
-            query: trimmed,
-          },
-        })
-
-        if (!active) {
-          return
-        }
-
-        setResults(next)
-        setActiveIndex(next.length > 0 ? 0 : -1)
-      } catch (error) {
-        if (!active) {
-          return
-        }
-
-        setResults([])
-        setActiveIndex(-1)
-        setFetchError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load cities right now. Please try again.',
-        )
-      } finally {
-        if (active) {
-          setIsLoading(false)
-        }
-      }
-    }, 260)
-
-    return () => {
-      active = false
-      window.clearTimeout(timer)
+  useEffect(() => {
+    if (!isOpen) {
+      return
     }
-  }, [query])
+
+    setActiveIndex((current) => {
+      if (results.length === 0) {
+        return -1
+      }
+
+      if (current >= 0 && current < results.length) {
+        return current
+      }
+
+      return 0
+    })
+  }, [results, isOpen])
 
   function handleSelect(city: CitySuggestion) {
-    skipNextFetchRef.current = true
+    setHasUserTypedSinceSelection(false)
     setQuery(city.label)
+    setDebouncedQuery(city.label.trim())
     setIsOpen(false)
     setActiveIndex(-1)
-    setFetchError(null)
     onSelect(city)
   }
 
@@ -151,12 +149,14 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
       return
     }
 
-    if (event.key === 'Enter' && isOpen && activeIndex >= 0) {
+    if (
+      event.key === 'Enter' &&
+      isOpen &&
+      activeIndex >= 0 &&
+      activeIndex < results.length
+    ) {
       event.preventDefault()
-      const selected = results[activeIndex]
-      if (selected) {
-        handleSelect(selected)
-      }
+      handleSelect(results[activeIndex])
     }
   }
 
@@ -176,11 +176,12 @@ export default function CityAutocomplete({ onSelect }: CityAutocompleteProps) {
         autoComplete="off"
         value={query}
         onChange={(event) => {
+          setHasUserTypedSinceSelection(true)
           setQuery(event.target.value)
         }}
         onKeyDown={handleKeyDown}
         onFocus={() => {
-          if (query.trim().length >= 2) {
+          if (hasUserTypedSinceSelection && query.trim().length >= 2) {
             setIsOpen(true)
           }
         }}

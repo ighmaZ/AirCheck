@@ -106,8 +106,8 @@ export const getCityAqi = createServerFn({ method: 'GET' })
       throw new Error('No AQI data available for this city right now.')
     }
 
-    const pm2_5 = Number(reading.components.pm2_5 ?? 0)
-    const pm10 = Number(reading.components.pm10 ?? 0)
+    const pm2_5 = Number(reading.components.pm2_5)
+    const pm10 = Number(reading.components.pm10)
 
     const computed = computeUsAqiFromComponents({
       pm2_5,

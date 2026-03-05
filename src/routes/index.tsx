@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import CityAutocomplete, {
-  type CitySuggestion,
-} from '../components/CityAutocomplete'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import CityAutocomplete from '../components/CityAutocomplete'
+import type { CitySuggestion } from '../components/CityAutocomplete'
 import type { AqiBand } from '../lib/aqi'
-import { getCityAqi, type CityAqiReport } from '../server/aqi'
+import { getCityAqi } from '../server/aqi'
 
 export const Route = createFileRoute('/')({ component: App })
 
@@ -24,59 +24,32 @@ const BADGE_CLASS_BY_BAND: Record<AqiBand, string> = {
 
 function App() {
   const [selectedCity, setSelectedCity] = useState<CitySuggestion | null>(null)
-  const [aqiReport, setAqiReport] = useState<CityAqiReport | null>(null)
-  const [aqiError, setAqiError] = useState<string | null>(null)
-  const [isAqiLoading, setIsAqiLoading] = useState(false)
-  const [refreshToken, setRefreshToken] = useState(0)
+  const aqiQuery = useQuery({
+    queryKey: [
+      'city-aqi',
+      selectedCity?.lat,
+      selectedCity?.lon,
+      selectedCity?.label,
+    ],
+    queryFn: () =>
+      getCityAqi({
+        data: {
+          lat: selectedCity!.lat,
+          lon: selectedCity!.lon,
+          cityLabel: selectedCity!.label,
+        },
+      }),
+    enabled: Boolean(selectedCity),
+    retry: false,
+  })
 
-  useEffect(() => {
-    if (!selectedCity) {
-      setAqiReport(null)
-      setAqiError(null)
-      setIsAqiLoading(false)
-      return
-    }
-
-    let active = true
-    setIsAqiLoading(true)
-    setAqiError(null)
-
-    getCityAqi({
-      data: {
-        lat: selectedCity.lat,
-        lon: selectedCity.lon,
-        cityLabel: selectedCity.label,
-      },
-    })
-      .then((report) => {
-        if (!active) {
-          return
-        }
-
-        setAqiReport(report)
-      })
-      .catch((error) => {
-        if (!active) {
-          return
-        }
-
-        setAqiReport(null)
-        setAqiError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load AQI data for this city.',
-        )
-      })
-      .finally(() => {
-        if (active) {
-          setIsAqiLoading(false)
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [selectedCity, refreshToken])
+  const aqiReport = aqiQuery.data ?? null
+  const aqiError = aqiQuery.error
+    ? aqiQuery.error instanceof Error
+      ? aqiQuery.error.message
+      : 'Unable to load AQI data for this city.'
+    : null
+  const isAqiLoading = selectedCity ? aqiQuery.isPending || aqiQuery.isFetching : false
 
   const isSearchOnlyView = !selectedCity
 
@@ -118,8 +91,6 @@ function App() {
             <CityAutocomplete
               onSelect={(city) => {
                 setSelectedCity(city)
-                setAqiReport(null)
-                setAqiError(null)
               }}
             />
           </div>
@@ -157,7 +128,7 @@ function App() {
             <button
               type="button"
               onClick={() => {
-                setRefreshToken((value) => value + 1)
+                void aqiQuery.refetch()
               }}
               className="mt-4 rounded-2xl border border-[rgba(44,154,120,0.35)] bg-[rgba(44,154,120,0.18)] px-4 py-2 text-sm font-semibold text-[var(--sea-ink)] transition hover:-translate-y-0.5 hover:bg-[rgba(44,154,120,0.28)]"
             >
