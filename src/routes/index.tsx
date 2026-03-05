@@ -1,8 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import CityAutocomplete, {
+  type CitySuggestion,
+} from '../components/CityAutocomplete'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const [selectedCity, setSelectedCity] = useState<CitySuggestion | null>(null)
+
   return (
     <main className="page-wrap aqi-page px-4 pb-12 pt-12">
       <section className="aqi-hero island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-12">
@@ -24,54 +30,38 @@ function App() {
           <h2 className="mb-4 text-2xl font-semibold text-[var(--sea-ink)]">
             Where do you live?
           </h2>
-          <label htmlFor="city-search" className="sr-only">
-            Search your city
-          </label>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              id="city-search"
-              name="city-search"
-              type="text"
-              placeholder="Type your city name"
-              className="w-full rounded-2xl border border-[var(--line)] bg-white/75 px-4 py-3 text-base text-[var(--sea-ink)] shadow-[0_12px_30px_rgba(27,62,58,0.08)] outline-none ring-[rgba(50,143,151,0.3)] transition placeholder:text-[var(--sea-ink-soft)] focus:ring-2"
-            />
-            <button
-              type="button"
-              className="rounded-2xl border border-[rgba(44,154,120,0.35)] bg-[rgba(44,154,120,0.18)] px-5 py-3 text-sm font-semibold text-[var(--sea-ink)] transition hover:-translate-y-0.5 hover:bg-[rgba(44,154,120,0.28)]"
-            >
-              Check AQI
-            </button>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {['New York, US', 'Delhi, IN', 'London, GB', 'Sydney, AU'].map(
-              (city) => (
-                <button
-                  key={city}
-                  type="button"
-                  className="rounded-full border border-[var(--line)] bg-white/70 px-3 py-1.5 text-sm text-[var(--sea-ink-soft)] transition hover:border-[rgba(50,143,151,0.35)] hover:text-[var(--sea-ink)]"
-                >
-                  {city}
-                </button>
-              ),
-            )}
-          </div>
+
+          <CityAutocomplete
+            onSelect={(city) => {
+              setSelectedCity(city)
+            }}
+          />
+
+          <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
+            Selected city:{' '}
+            <span className="font-semibold text-[var(--sea-ink)]">
+              {selectedCity ? selectedCity.label : 'No city selected yet'}
+            </span>
+          </p>
         </article>
 
         <article className="aqi-status-card island-shell rounded-3xl p-5 sm:p-7">
           <p className="island-kicker mb-2">Current Reading</p>
-          <p className="text-sm text-[var(--sea-ink-soft)]">New York, US</p>
+          <p className="text-sm text-[var(--sea-ink-soft)]">
+            {selectedCity ? selectedCity.label : 'Select a city to view AQI'}
+          </p>
           <div className="mt-5 flex items-end gap-3">
             <p className="m-0 text-6xl leading-none font-bold text-[var(--sea-ink)]">
-              86
+              --
             </p>
             <p className="mb-1 text-sm text-[var(--sea-ink-soft)]">US AQI</p>
           </div>
-          <p className="mt-4 inline-flex rounded-full border border-[rgba(219,146,45,0.34)] bg-[rgba(219,146,45,0.14)] px-3 py-1 text-sm font-semibold text-[#8a5b1f]">
-            Moderate · Generally safe
+          <p className="mt-4 inline-flex rounded-full border border-[rgba(79,184,178,0.32)] bg-[rgba(79,184,178,0.12)] px-3 py-1 text-sm font-semibold text-[var(--sea-ink)]">
+            Awaiting live AQI data
           </p>
           <p className="mt-4 text-sm leading-7 text-[var(--sea-ink-soft)]">
-            Air quality is acceptable for most people. Sensitive individuals may
-            experience minor irritation with prolonged outdoor exertion.
+            City selection is now powered by global live data. AQI fetching and
+            health analysis will be wired in the next step.
           </p>
         </article>
       </section>

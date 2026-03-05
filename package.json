@@ -2,6 +2,7 @@
   "name": "aircheck",
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.9",
   "imports": {
     "#/*": "./src/*"
   },
