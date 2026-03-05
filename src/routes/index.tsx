@@ -1,13 +1,93 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import CityAutocomplete, {
   type CitySuggestion,
 } from '../components/CityAutocomplete'
+import type { AqiBand } from '../lib/aqi'
+import { getCityAqi, type CityAqiReport } from '../server/aqi'
 
 export const Route = createFileRoute('/')({ component: App })
 
+const BADGE_CLASS_BY_BAND: Record<AqiBand, string> = {
+  Good: 'border-[rgba(47,143,97,0.34)] bg-[rgba(47,143,97,0.13)] text-[#20593f]',
+  Moderate:
+    'border-[rgba(164,106,29,0.34)] bg-[rgba(164,106,29,0.14)] text-[#74460e]',
+  'Unhealthy for Sensitive Groups':
+    'border-[rgba(180,90,13,0.34)] bg-[rgba(180,90,13,0.14)] text-[#7b3901]',
+  Unhealthy:
+    'border-[rgba(177,59,59,0.34)] bg-[rgba(177,59,59,0.14)] text-[#7b1f1f]',
+  'Very Unhealthy':
+    'border-[rgba(122,60,165,0.34)] bg-[rgba(122,60,165,0.14)] text-[#5e2f82]',
+  Hazardous:
+    'border-[rgba(111,30,40,0.34)] bg-[rgba(111,30,40,0.14)] text-[#5e1d2b]',
+}
+
 function App() {
   const [selectedCity, setSelectedCity] = useState<CitySuggestion | null>(null)
+  const [aqiReport, setAqiReport] = useState<CityAqiReport | null>(null)
+  const [aqiError, setAqiError] = useState<string | null>(null)
+  const [isAqiLoading, setIsAqiLoading] = useState(false)
+
+  useEffect(() => {
+    if (!selectedCity) {
+      setAqiReport(null)
+      setAqiError(null)
+      setIsAqiLoading(false)
+      return
+    }
+
+    let active = true
+    setIsAqiLoading(true)
+    setAqiError(null)
+
+    getCityAqi({
+      data: {
+        lat: selectedCity.lat,
+        lon: selectedCity.lon,
+        cityLabel: selectedCity.label,
+      },
+    })
+      .then((report) => {
+        if (!active) {
+          return
+        }
+
+        setAqiReport(report)
+      })
+      .catch((error) => {
+        if (!active) {
+          return
+        }
+
+        setAqiReport(null)
+        setAqiError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load AQI data for this city.',
+        )
+      })
+      .finally(() => {
+        if (active) {
+          setIsAqiLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedCity])
+
+  const impactItems =
+    aqiReport?.assessment.lifeImpact ??
+    (selectedCity
+      ? ['Loading live health-impact guidance for your selected city.']
+      : ['Select a city to see how current AQI can affect daily life.'])
+
+  const actionItems =
+    aqiReport?.assessment.recommendedActions ??
+    (selectedCity
+      ? ['Loading recommended protective actions...']
+      : ['Select a city to get personalized AQI safety actions.'])
 
   return (
     <main className="page-wrap aqi-page px-4 pb-12 pt-12">
@@ -52,16 +132,43 @@ function App() {
           </p>
           <div className="mt-5 flex items-end gap-3">
             <p className="m-0 text-6xl leading-none font-bold text-[var(--sea-ink)]">
-              --
+              {isAqiLoading ? '...' : aqiReport ? aqiReport.usAqi : '--'}
             </p>
             <p className="mb-1 text-sm text-[var(--sea-ink-soft)]">US AQI</p>
           </div>
-          <p className="mt-4 inline-flex rounded-full border border-[rgba(79,184,178,0.32)] bg-[rgba(79,184,178,0.12)] px-3 py-1 text-sm font-semibold text-[var(--sea-ink)]">
-            Awaiting live AQI data
-          </p>
+
+          {!selectedCity ? (
+            <p className="mt-4 inline-flex rounded-full border border-[rgba(79,184,178,0.32)] bg-[rgba(79,184,178,0.12)] px-3 py-1 text-sm font-semibold text-[var(--sea-ink)]">
+              Awaiting city selection
+            </p>
+          ) : null}
+
+          {selectedCity && isAqiLoading ? (
+            <p className="mt-4 inline-flex rounded-full border border-[rgba(79,184,178,0.32)] bg-[rgba(79,184,178,0.12)] px-3 py-1 text-sm font-semibold text-[var(--sea-ink)]">
+              Loading live AQI...
+            </p>
+          ) : null}
+
+          {selectedCity && aqiError ? (
+            <p className="mt-4 inline-flex rounded-full border border-[rgba(177,59,59,0.34)] bg-[rgba(177,59,59,0.14)] px-3 py-1 text-sm font-semibold text-[#7b1f1f]">
+              AQI fetch failed
+            </p>
+          ) : null}
+
+          {aqiReport ? (
+            <p
+              className={`mt-4 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${BADGE_CLASS_BY_BAND[aqiReport.assessment.band]}`}
+            >
+              {aqiReport.assessment.band} · {aqiReport.assessment.safeVerdict}
+            </p>
+          ) : null}
+
           <p className="mt-4 text-sm leading-7 text-[var(--sea-ink-soft)]">
-            City selection is now powered by global live data. AQI fetching and
-            health analysis will be wired in the next step.
+            {aqiError
+              ? aqiError
+              : aqiReport
+                ? `${aqiReport.assessment.summary} Primary pollutant: ${aqiReport.primaryPollutant}.`
+                : 'Select a city to get real-time AQI and health guidance.'}
           </p>
         </article>
       </section>
@@ -70,22 +177,18 @@ function App() {
         <article className="island-shell rounded-3xl p-5 sm:p-7">
           <p className="island-kicker mb-3">How It Affects Daily Life</p>
           <ul className="m-0 list-disc space-y-2 pl-5 text-sm leading-7 text-[var(--sea-ink-soft)]">
-            <li>Outdoor workouts may feel slightly more strenuous than usual.</li>
-            <li>People with asthma can experience mild symptoms outdoors.</li>
-            <li>
-              Indoor comfort remains good if windows stay closed during traffic
-              peaks.
-            </li>
+            {impactItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
           </ul>
         </article>
 
         <article className="island-shell rounded-3xl p-5 sm:p-7">
           <p className="island-kicker mb-3">What You Should Do</p>
           <ol className="m-0 list-decimal space-y-2 pl-5 text-sm leading-7 text-[var(--sea-ink-soft)]">
-            <li>Limit prolonged high-intensity outdoor activity.</li>
-            <li>Prefer parks or lower-traffic routes for evening walks.</li>
-            <li>Keep rescue medication available if you are respiratory-sensitive.</li>
-            <li>Recheck AQI in a few hours before long outdoor exposure.</li>
+            {actionItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
           </ol>
         </article>
       </section>
